@@ -48,6 +48,56 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Cambia lo stato di un'attività
+  void _cambiaStato(Attivita attivita) {
+    setState(() {
+      attivita.completata = !attivita.completata;
+    });
+  }
+
+  // Eliminazione di un'attività con conferma
+  Future<void> _eliminaAttivita(Attivita attivita) async {
+
+    // Chiediamo conferma all'utente
+    final conferma = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Eliminare attività?'),
+        content: Text(
+          'Vuoi eliminare "${attivita.titolo}"?',
+        ),
+        actions: [
+
+          // Annulla l'eliminazione
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext, false);
+            },
+            child: const Text('Annulla'),
+          ),
+
+          // Conferma l'eliminazione
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext, true);
+            },
+            child: const Text('Elimina'),
+          ),
+        ],
+      ),
+    );
+
+    // Se l'utente annulla, non eliminiamo nulla
+    if (!mounted || conferma != true) {
+      return;
+    }
+
+    // Rimuoviamo l'attività
+    setState(() {
+      _attivita.remove(attivita);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -122,30 +172,57 @@ class _HomeScreenState extends State<HomeScreen> {
                           vertical: 6,
                         ),
 
-                        // Contorno colorato della Card
+                        // Contorno colorato
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(
                             color: coloreBordo,
-                            width: 1,
+                            width: 1.5,
                           ),
                         ),
 
                         child: ListTile(
-                          leading: Icon(
-                            attivita.completata
-                                ? Icons.check_circle
-                                : Icons.radio_button_unchecked,
+
+                          // Checkbox per cambiare lo stato
+                          leading: Checkbox(
+                            value: attivita.completata,
+                            onChanged: (valore) {
+                              _cambiaStato(attivita);
+                            },
                           ),
 
-                          title: Text(attivita.titolo),
+                          // Titolo dell'attività
+                          title: Text(
+                            attivita.titolo,
+                            style: TextStyle(
+                              decoration: attivita.completata
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                            ),
+                          ),
 
+                          // Stato, priorità e importanza
                           subtitle: Text(
                             'Stato: ${attivita.completata ? 'Completata' : 'Da fare'}\n'
-                            'Priorità: ${attivita.priorita.name}',
+                            'Priorità: ${attivita.priorita.name} - '
+                            '${attivita.importante ? 'Importante' : 'Non importante'}',
                           ),
 
                           isThreeLine: true,
+
+                          // Toccando la riga cambia lo stato
+                          onTap: () {
+                            _cambiaStato(attivita);
+                          },
+
+                          // Pulsante di eliminazione
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            tooltip: 'Elimina attività',
+                            onPressed: () {
+                              _eliminaAttivita(attivita);
+                            },
+                          ),
                         ),
                       );
                     },
